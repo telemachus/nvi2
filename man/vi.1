@@ -1774,6 +1774,12 @@ Change the current working directory.
 Copy the specified lines after the destination
 .Ar line .
 .Pp
+.It Cm cq Ns Op Cm uit
+Exit with a failure status.
+Useful for aborting operations such as
+.Xr git 1
+commit message editing.
+.Pp
 .It Xo
 .Cm cs Ns Op Cm cope
 .Cm add | find | help | kill | reset

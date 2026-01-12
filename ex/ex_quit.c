@@ -39,3 +39,17 @@ ex_quit(SCR *sp, EXCMD *cmdp)
 	F_SET(sp, force ? SC_EXIT_FORCE : SC_EXIT);
 	return (0);
 }
+
+/*
+ * ex_cq -- :cq[uit]
+ *	Quit with a failure status.
+ *
+ * PUBLIC: int ex_cq(SCR *, EXCMD *);
+ */
+int
+ex_cq(SCR *sp, EXCMD *cmdp)
+{
+	F_SET(sp->gp, G_EXIT_FAIL);
+	F_SET(sp, SC_EXIT_FORCE);
+	return (0);
+}

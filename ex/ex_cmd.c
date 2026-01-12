@@ -131,6 +131,11 @@ EXCMDLIST const cmds[] = {
 	    "l1",
 	    "[line [,line]] co[py] line [flags]",
 	    "copy lines elsewhere in the file"},
+/* C_CQ */
+	{L("cquit"),	ex_cq,		0,
+	    "",
+	    "cq[uit]",
+	    "exit with a failure status"},
 /* C_CSCOPE */
 	{L("cscope"),      ex_cscope,      0,
 	    "!s",
