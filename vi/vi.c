@@ -630,11 +630,11 @@ v_cmd(
 	}
 
 	/*
-	 * Special case: '[', ']' and 'Z' commands.  Doesn't the fact that
-	 * the *single* characters don't mean anything but the *doubled*
+	 * Special case: '[', ']', 'Z' and 'g' commands.  Doesn't the fact
+	 * that the *single* characters don't mean anything but the *doubled*
 	 * characters do, just frost your shorts?
 	 */
-	if (vp->key == '[' || vp->key == ']' || vp->key == 'Z') {
+	if (vp->key == '[' || vp->key == ']' || vp->key == 'Z' || vp->key == 'g') {
 		/*
 		 * Historically, half entered [[, ]] or Z commands weren't
 		 * cancelled by <escape>, the terminal was beeped instead.

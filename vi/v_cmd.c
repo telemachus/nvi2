@@ -401,7 +401,9 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]f character",
 	    " f character in line forward search"},
 /* 147   g */
-	{NULL},
+	{v_gg,		V_ABS_L|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETFNB,
+	    "[count]gg",
+	    "gg move to line (default first)"},
 /* 150   h */
 	{v_left,	V_CNT|V_MOVE|VM_RCM_SET,
 	    "[count]h",
