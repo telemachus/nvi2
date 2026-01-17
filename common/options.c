@@ -159,6 +159,8 @@ OPTLIST const optlist[] = {
 	{L("readonly"),	f_readonly,	OPT_0BOOL,	OPT_ALWAYS},
 /* O_RECDIR	  4.4BSD */
 	{L("recdir"),	NULL,		OPT_STR,	0},
+/* O_RELATIVENUMBER   nvi2 */
+	{L("relativenumber"),	f_reformat,	OPT_0BOOL,	0},
 /* O_REDRAW	    4BSD */
 	{L("redraw"),	NULL,		OPT_0BOOL,	0},
 /* O_REMAP	    4BSD */
@@ -271,6 +273,7 @@ static OABBREV const abbrev[] = {
 	{L("opt"),	O_OPTIMIZE},		/*     4BSD */
 	{L("para"),	O_PARAGRAPHS},		/*     4BSD */
 	{L("re"),	O_REDRAW},		/* O'Reilly */
+	{L("rnu"),	O_RELATIVENUMBER},	/*     nvi2 */
 	{L("ro"),	O_READONLY},		/*     4BSD (undocumented) */
 	{L("scr"),	O_SCROLL},		/*     4BSD (undocumented) */
 	{L("sect"),	O_SECTIONS},		/* O'Reilly */

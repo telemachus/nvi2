@@ -2450,6 +2450,12 @@ This option will never be implemented.
 Characters that are never handled as printable characters.
 .It Cm number , nu Bq off
 Precede each line displayed with its current line number.
+If both
+.Cm number
+and
+.Cm relativenumber
+are set, the current line displays its absolute line number
+while other lines display their distance from the current line.
 .It Cm octal Bq off
 Display unknown characters as octal numbers, instead of the default
 hexadecimal.
@@ -2486,6 +2492,15 @@ Display a command prompt.
 Mark the file and session as read-only.
 .It Cm recdir Bq /var/tmp/vi.recover
 The directory where recovery files are stored.
+.It Cm relativenumber , rnu Bq off
+Precede each line displayed with its distance from the current line.
+The current line itself displays 0.
+If both
+.Cm number
+and
+.Cm relativenumber
+are set, the current line displays its absolute line number
+while other lines display their distance from the current line.
 .It Cm redraw , re Bq off
 .Nm vi
 only.
