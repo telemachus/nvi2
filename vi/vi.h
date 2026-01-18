@@ -144,6 +144,7 @@ struct _vikeys {			/* Underlying function. */
 #define	MAXVIKEY	126		/* List of vi commands. */
 extern VIKEYS const vikeys[MAXVIKEY + 1];
 extern VIKEYS const tmotion;		/* XXX Hacked ~ command. */
+extern VIKEYS const vtextobj;		/* Text object motion. */
 
 /* Character stream structure, prototypes. */
 typedef struct _vcs {

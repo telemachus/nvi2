@@ -536,6 +536,13 @@ It defaults to 1 if not specified.
 A cursor movement command which indicates the other end of the affected region
 of text, the first being the current cursor position.
 Repeating the command character makes it affect the whole current line.
+.It Ar object
+A text object specifier used with the
+.Cm a
+or
+.Cm i
+prefix to select regions of text such as words, quoted strings, or
+text enclosed by paired delimiters.
 .It Ar word
 A sequence of letters, digits or underscores.
 .El
@@ -1551,6 +1558,66 @@ move to the start of the current line.
 Move forward
 .Ar count
 paragraphs.
+.Pp
+.It Cm a Ns Aq Ar object
+.It Cm i Ns Aq Ar object
+Select a text object for use with an operator command
+.Pq such as Cm c , d , No or Cm y .
+The
+.Cm a
+.Pq Dq around
+variant includes the delimiters or surrounding whitespace.
+The
+.Cm i
+.Pq Dq inner
+variant excludes delimiters and selects only the inner content.
+.Pp
+The following text objects are supported:
+.Bl -tag -width Ds -compact
+.It Cm w
+A word
+.Pq sequence of letters, digits, or underscores .
+.It Cm W
+A bigword
+.Pq sequence of non-whitespace characters .
+.It Cm \(dq , \(aq , \`
+A quoted string delimited by the specified quote character.
+Operates on a single line only.
+.It Cm \&( , \&) , b
+Text enclosed by parentheses.
+.It Cm \&[ , \&]
+Text enclosed by square brackets.
+.It Cm \&{ , \&} , B
+Text enclosed by curly braces.
+.It Cm < , >
+Text enclosed by angle brackets.
+.It Cm l
+A line.
+The inner variant
+.Pq Cm il
+selects from the first to the last non-whitespace character.
+The around variant
+.Pq Cm al
+selects the entire line content but not the newline.
+.It Cm e
+The entire buffer.
+The inner variant
+.Pq Cm ie
+selects from the first non-whitespace character in the first non-blank line
+to the last non-whitespace character in the last non-blank line.
+The around variant
+.Pq Cm ae
+selects all lines in the buffer
+.Pq line-mode .
+.El
+.Pp
+Examples:
+.Cm diw
+deletes the word under the cursor;
+.Cm ca\(dq
+changes a double-quoted string including the quotes;
+.Cm yi(
+yanks the text inside parentheses.
 .Pp
 .It Xo
 .Op Ar count
