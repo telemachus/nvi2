@@ -2318,6 +2318,21 @@ Display the current line automatically.
 .It Cm autowrite , aw Bq off
 Write modified files automatically when changing files or suspending the editor
 session.
+.It Cm backspace , bs Bq 0
+.Nm vi
+only.
+Control what backspace can delete in insert mode.
+The value is a number from 0 to 3:
+.Bl -tag -width "0" -compact
+.It 0
+Traditional vi behavior; backspace cannot cross the insertion point.
+.It 1
+Allow backspacing over end-of-line to join lines.
+.It 2
+Like 1, but also allow backspacing over autoindent.
+.It 3
+Allow backspacing over anything, including past the insertion point.
+.El
 .It Cm backup Bq \&"\&"
 Back up files before they are overwritten.
 .It Cm beautify , bf Bq off

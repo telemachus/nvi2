@@ -56,6 +56,14 @@ OPTLIST const optlist[] = {
 	{L("autoprint"),	NULL,		OPT_1BOOL,	0},
 /* O_AUTOWRITE	    4BSD */
 	{L("autowrite"),	NULL,		OPT_0BOOL,	0},
+/* O_BACKSPACE	  nvi2
+ *	Backspace option controls what backspace can delete in insert mode.
+ *	0 = traditional vi (cannot backspace over start of insert)
+ *	1 = eol (can backspace over line breaks)
+ *	2 = indent,eol (can also backspace over autoindent)
+ *	3 = indent,eol,start (can backspace over anything)
+ */
+	{L("backspace"),	NULL,		OPT_NUM,	0},
 /* O_BACKUP	  4.4BSD */
 	{L("backup"),	NULL,		OPT_STR,	0},
 /* O_BEAUTIFY	    4BSD */
