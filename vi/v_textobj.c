@@ -102,8 +102,8 @@ textobj_word(SCR *sp, VICMD *vp, int around, int bigword)
 	size_t len;
 	CHAR_T *p;
 	int in_blank;
-	recno_t start_lno, stop_lno;
-	size_t start_cno, stop_cno;
+	recno_t start_lno = 0, stop_lno = 0;
+	size_t start_cno = 0, stop_cno = 0;
 
 	/* Get current line. */
 	if (db_get(sp, vp->m_start.lno, DBG_FATAL, &p, &len))
@@ -370,8 +370,8 @@ textobj_pair(SCR *sp, VICMD *vp, int around, CHAR_T open, CHAR_T close)
 {
 	VCS cs;
 	int cnt;
-	recno_t start_lno, stop_lno;
-	size_t start_cno, stop_cno;
+	recno_t start_lno = 0, stop_lno = 0;
+	size_t start_cno = 0, stop_cno = 0;
 	int found_open, found_close;
 
 	cs.cs_lno = vp->m_start.lno;
