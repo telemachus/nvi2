@@ -778,8 +778,11 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		 * no characters in the old line.  Note, if using the current
 		 * tp structure, use the cursor as the length, the autoindent
 		 * characters may have been erased.
+		 *
+		 * Skip autoindent during bracketed paste to allow literal
+		 * insertion of pasted text.
 		 */
-		if (LF_ISSET(TXT_AUTOINDENT)) {
+		if (LF_ISSET(TXT_AUTOINDENT) && !F_ISSET(sp->gp, G_BPASTE)) {
 			if (nochange) {
 				nochange = 0;
 				if (v_txt_auto(sp, OOBLNO, &ait, ait.ai, ntp))

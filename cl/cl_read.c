@@ -35,6 +35,7 @@
 static input_t	cl_read(SCR *,
     u_int32_t, char *, size_t, int *, struct timeval *);
 static int	cl_resize(SCR *, size_t, size_t);
+static int	cl_bpaste_filter(SCR *, char *, int *);
 
 /*
  * cl_event --
@@ -102,7 +103,24 @@ read:
 	switch (cl_read(sp, LF_ISSET(EC_QUOTED | EC_RAW),
 	    clp->ibuf + clp->skip, SIZE(clp->ibuf) - clp->skip, &nr, tp)) {
 	case INP_OK:
-		rc = INPUT2INT5(sp, clp->cw, clp->ibuf, nr + clp->skip, 
+		/*
+		 * Filter bracketed paste escape sequences from raw input.
+		 * Sets G_BPASTE on start, sets CL_BPASTE_END on end.
+		 * G_BPASTE is cleared after events are created below.
+		 */
+		{
+			int total = nr + clp->skip;
+			(void)cl_bpaste_filter(sp, clp->ibuf, &total);
+			if (total == 0) {
+				clp->skip = 0;
+				goto read;
+			}
+			nr = total - clp->skip;
+			if (nr < 0) {
+				nr = 0;
+			}
+		}
+		rc = INPUT2INT5(sp, clp->cw, clp->ibuf, nr + clp->skip,
 				wp, wlen);
 		evp->e_csp = wp;
 		evp->e_len = wlen;
@@ -113,10 +131,11 @@ read:
 		    clp->skip = n;
 		    if (wlen == 0)
 			goto read;
-		} else if (rc == 0)
+		} else if (rc == 0) {
 		    clp->skip = 0;
-		else
+		} else {
 		    msgq(sp, M_ERR, "323|Invalid input. Truncated.");
+		}
 		break;
 	case INP_EOF:
 		evp->e_event = E_EOF;
@@ -324,4 +343,70 @@ cl_resize(SCR *sp, size_t lines, size_t columns)
 	if (opts_set(sp, argv, NULL))
 		return (1);
 	return (0);
+}
+
+/*
+ * cl_bpaste_filter --
+ *	Filter bracketed paste escape sequences from input buffer.
+ *	Sets G_BPASTE when paste start sequence is found.
+ *	Sets CL_BPASTE_END when paste end sequence is found (does NOT
+ *	clear G_BPASTE here; caller clears it after events are created).
+ *	Removes the escape sequences from the buffer.
+ *
+ *	Returns 1 if any filtering was done, 0 otherwise.
+ */
+#define	BPASTE_START	"\033[200~"
+#define	BPASTE_END	"\033[201~"
+#define	BPASTE_LEN	6
+
+static int
+cl_bpaste_filter(SCR *sp, char *buf, int *lenp)
+{
+	CL_PRIVATE *clp;
+	GS *gp;
+	char *p, *end, *dst;
+	int len, filtered;
+
+	gp = sp->gp;
+	clp = CLP(sp);
+	len = *lenp;
+	if (len < BPASTE_LEN) {
+		return (0);
+	}
+
+	filtered = 0;
+	dst = buf;
+	end = buf + len;
+
+	for (p = buf; p < end; ) {
+		/* Check for paste start sequence. */
+		if (end - p >= BPASTE_LEN &&
+		    memcmp(p, BPASTE_START, BPASTE_LEN) == 0) {
+			F_SET(gp, G_BPASTE);
+			p += BPASTE_LEN;
+			filtered = 1;
+			continue;
+		}
+
+		/* Check for paste end sequence. */
+		if (end - p >= BPASTE_LEN &&
+		    memcmp(p, BPASTE_END, BPASTE_LEN) == 0) {
+			F_CLR(gp, G_BPASTE);
+			p += BPASTE_LEN;
+			filtered = 1;
+			continue;
+		}
+
+		/* Copy character to destination. */
+		if (dst != p) {
+			*dst = *p;
+		}
+		dst++;
+		p++;
+	}
+
+	if (filtered) {
+		*lenp = dst - buf;
+	}
+	return (filtered);
 }

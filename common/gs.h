@@ -137,6 +137,7 @@ struct _gs {
 #define	G_SNAPSHOT	0x0080		/* Always snapshot files. */
 #define	G_SRESTART	0x0100		/* Screen restarted. */
 #define	G_TMP_INUSE	0x0200		/* Temporary buffer in use. */
+#define	G_BPASTE	0x0400		/* Bracketed paste in progress. */
 	u_int32_t flags;
 
 	/* Screen interface functions. */

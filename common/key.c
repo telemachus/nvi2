@@ -406,10 +406,10 @@ copy:	gp->i_cnt += nitems;
 static int
 v_event_append(SCR *sp, EVENT *argp)
 {
-	CHAR_T *s;			/* Characters. */
+	CHAR_T *s;
 	EVENT *evp;
 	GS *gp;
-	size_t nevents;			/* Number of events. */
+	size_t nevents;
 
 	/* Grow the buffer as necessary. */
 	nevents = argp->e_event == E_STRING ? argp->e_len : 1;
@@ -421,15 +421,21 @@ v_event_append(SCR *sp, EVENT *argp)
 	gp->i_cnt += nevents;
 
 	/* Transform strings of characters into single events. */
-	if (argp->e_event == E_STRING)
+	if (argp->e_event == E_STRING) {
+		/*
+		 * If in bracketed paste mode, mark characters as CH_NOMAP
+		 * so they bypass mapping and abbreviation expansion.
+		 */
+		u_int8_t flags = F_ISSET(gp, G_BPASTE) ? CH_NOMAP : 0;
 		for (s = argp->e_csp; nevents--; ++evp) {
 			evp->e_event = E_CHARACTER;
 			evp->e_c = *s++;
 			evp->e_value = KEY_VAL(sp, evp->e_c);
-			evp->e_flags = 0;
+			evp->e_flags = flags;
 		}
-	else
+	} else {
 		*evp = *argp;
+	}
 	return (0);
 }
 

@@ -283,6 +283,14 @@ cl_vi_init(SCR *sp)
 	clp->ti_te = TI_SENT;
 
 	/*
+	 * Enable bracketed paste mode.  When enabled, pasted text is
+	 * bracketed with escape sequences: ESC[200~ ... ESC[201~
+	 * This allows us to handle pasted text specially (no autoindent,
+	 * no mapping, literal insertion).
+	 */
+	(void)putp("\033[?2004h");
+
+	/*
 	 * XXX
 	 * Historic implementations of curses handled SIGTSTP signals
 	 * in one of three ways.  They either:
@@ -378,6 +386,9 @@ cl_vi_end(GS *gp)
 	CL_PRIVATE *clp;
 
 	clp = GCLP(gp);
+
+	/* Disable bracketed paste mode. */
+	(void)putp("\033[?2004l");
 
 	/* Restore the cursor keys to normal mode. */
 	(void)keypad(stdscr, FALSE);
