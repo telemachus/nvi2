@@ -66,7 +66,7 @@ set(EX_SRCS
 
 set(VI_SRCS
     vi/getc.c vi/v_at.c vi/v_ch.c vi/v_cmd.c vi/v_delete.c vi/v_ex.c
-    vi/v_increment.c vi/v_init.c vi/v_itxt.c vi/v_left.c vi/v_mark.c
+    vi/v_increment.c vi/v_init.c vi/v_itxt.c vi/v_keyword.c vi/v_left.c vi/v_mark.c
     vi/v_match.c vi/v_paragraph.c vi/v_put.c vi/v_redraw.c vi/v_replace.c
     vi/v_right.c vi/v_screen.c vi/v_scroll.c vi/v_search.c vi/v_section.c
     vi/v_sentence.c vi/v_status.c vi/v_textobj.c vi/v_txt.c vi/v_ulcase.c

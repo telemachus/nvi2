@@ -286,7 +286,9 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]J",
 	    " J join lines"},
 /* 113   K */
-	{NULL},
+	{v_keyword,	V_KEYW|V_SECURE,
+	    "K",
+	    " K display man page for keyword"},
 /* 114   L */
 	{v_bottom,	V_ABS_L|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETNNB,
 	    "[count]L",
