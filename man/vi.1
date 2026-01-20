@@ -536,6 +536,13 @@ It defaults to 1 if not specified.
 A cursor movement command which indicates the other end of the affected region
 of text, the first being the current cursor position.
 Repeating the command character makes it affect the whole current line.
+.It Ar object
+A text object specifier used with the
+.Cm a
+or
+.Cm i
+prefix to select regions of text such as words, quoted strings, or
+text enclosed by paired delimiters.
 .It Ar word
 A sequence of letters, digits or underscores.
 .El
@@ -1347,6 +1354,16 @@ times, through the rest of the current line for
 .Pp
 .It Xo
 .Op Ar count
+.Cm gg
+.Xc
+Move to line
+.Ar count ,
+or the first line of the file if
+.Ar count
+is not specified.
+.Pp
+.It Xo
+.Op Ar count
 .Cm i
 .Xc
 Enter input mode, inserting the text before the cursor.
@@ -1541,6 +1558,66 @@ move to the start of the current line.
 Move forward
 .Ar count
 paragraphs.
+.Pp
+.It Cm a Ns Aq Ar object
+.It Cm i Ns Aq Ar object
+Select a text object for use with an operator command
+.Pq such as Cm c , d , No or Cm y .
+The
+.Cm a
+.Pq Dq around
+variant includes the delimiters or surrounding whitespace.
+The
+.Cm i
+.Pq Dq inner
+variant excludes delimiters and selects only the inner content.
+.Pp
+The following text objects are supported:
+.Bl -tag -width Ds -compact
+.It Cm w
+A word
+.Pq sequence of letters, digits, or underscores .
+.It Cm W
+A bigword
+.Pq sequence of non-whitespace characters .
+.It Cm \(dq , \(aq , \`
+A quoted string delimited by the specified quote character.
+Operates on a single line only.
+.It Cm \&( , \&) , b
+Text enclosed by parentheses.
+.It Cm \&[ , \&]
+Text enclosed by square brackets.
+.It Cm \&{ , \&} , B
+Text enclosed by curly braces.
+.It Cm < , >
+Text enclosed by angle brackets.
+.It Cm l
+A line.
+The inner variant
+.Pq Cm il
+selects from the first to the last non-whitespace character.
+The around variant
+.Pq Cm al
+selects the entire line content but not the newline.
+.It Cm e
+The entire buffer.
+The inner variant
+.Pq Cm ie
+selects from the first non-whitespace character in the first non-blank line
+to the last non-whitespace character in the last non-blank line.
+The around variant
+.Pq Cm ae
+selects all lines in the buffer
+.Pq line-mode .
+.El
+.Pp
+Examples:
+.Cm diw
+deletes the word under the cursor;
+.Cm ca\(dq
+changes a double-quoted string including the quotes;
+.Cm yi(
+yanks the text inside parentheses.
 .Pp
 .It Xo
 .Op Ar count
@@ -1773,6 +1850,12 @@ Change the current working directory.
 .Xc
 Copy the specified lines after the destination
 .Ar line .
+.Pp
+.It Cm cq Ns Op Cm uit
+Exit with a failure status.
+Useful for aborting operations such as
+.Xr git 1
+commit message editing.
 .Pp
 .It Xo
 .Cm cs Ns Op Cm cope
@@ -2302,6 +2385,21 @@ Display the current line automatically.
 .It Cm autowrite , aw Bq off
 Write modified files automatically when changing files or suspending the editor
 session.
+.It Cm backspace , bs Bq 0
+.Nm vi
+only.
+Control what backspace can delete in insert mode.
+The value is a number from 0 to 3:
+.Bl -tag -width "0" -compact
+.It 0
+Traditional vi behavior; backspace cannot cross the insertion point.
+.It 1
+Allow backspacing over end-of-line to join lines.
+.It 2
+Like 1, but also allow backspacing over autoindent.
+.It 3
+Allow backspacing over anything, including past the insertion point.
+.El
 .It Cm backup Bq \&"\&"
 Back up files before they are overwritten.
 .It Cm beautify , bf Bq off
@@ -2434,6 +2532,12 @@ This option will never be implemented.
 Characters that are never handled as printable characters.
 .It Cm number , nu Bq off
 Precede each line displayed with its current line number.
+If both
+.Cm number
+and
+.Cm relativenumber
+are set, the current line displays its absolute line number
+while other lines display their distance from the current line.
 .It Cm octal Bq off
 Display unknown characters as octal numbers, instead of the default
 hexadecimal.
@@ -2470,6 +2574,15 @@ Display a command prompt.
 Mark the file and session as read-only.
 .It Cm recdir Bq /var/tmp/vi.recover
 The directory where recovery files are stored.
+.It Cm relativenumber , rnu Bq off
+Precede each line displayed with its distance from the current line.
+The current line itself displays 0.
+If both
+.Cm number
+and
+.Cm relativenumber
+are set, the current line displays its absolute line number
+while other lines display their distance from the current line.
 .It Cm redraw , re Bq off
 .Nm vi
 only.

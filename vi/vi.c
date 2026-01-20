@@ -431,6 +431,16 @@ VIKEYS const tmotion = {
 };
 
 /*
+ * Text object motion entry for commands like iw, aw, i", a", i(, a(, etc.
+ * This is used when parsing text object commands in operator-pending mode.
+ */
+VIKEYS const vtextobj = {
+	v_textobj,	V_MOVE|VM_RCM_SET,
+	"[count]a|i{object}",
+	" text object selection"
+};
+
+/*
  * v_cmd --
  *
  * The command structure for vi is less complex than ex (and don't think
@@ -538,6 +548,48 @@ v_cmd(
 		v_emsg(sp, KEY_NAME(sp, key), VIM_NOCOM);
 		return (GC_ERR);
 	}
+
+	/*
+	 * Text object handling: in operator-pending mode (motion context),
+	 * 'a' and 'i' are text object prefixes, not insert/append commands.
+	 * Read the next character to determine the object type.
+	 */
+	if (ismotion != NULL && (key == 'a' || key == 'i')) {
+		CHAR_T objkey;
+
+		KEY(objkey, 0);
+
+		/* Validate the object character. */
+		switch (objkey) {
+		case 'w':	/* word */
+		case 'W':	/* WORD */
+		case '"':	/* double quote */
+		case '\'':	/* single quote */
+		case '`':	/* backtick */
+		case '(':	/* parentheses */
+		case ')':
+		case 'b':	/* parentheses (Vim alias) */
+		case '[':	/* brackets */
+		case ']':
+		case '{':	/* braces */
+		case '}':
+		case 'B':	/* braces (Vim alias) */
+		case '<':	/* angle brackets */
+		case '>':
+		case 'l':	/* line */
+		case 'e':	/* entire buffer */
+			/* Valid text object. */
+			vp->key = key;
+			vp->character = objkey;
+			vp->kp = kp = &vtextobj;
+			return (GC_OK);
+		default:
+			/* Not a valid text object. */
+			msgq(sp, M_ERR, "Unknown text object: %c%c", key, objkey);
+			return (GC_ERR);
+		}
+	}
+
 	kp = &vikeys[vp->key = key];
 
 	/*
@@ -630,11 +682,11 @@ v_cmd(
 	}
 
 	/*
-	 * Special case: '[', ']' and 'Z' commands.  Doesn't the fact that
-	 * the *single* characters don't mean anything but the *doubled*
+	 * Special case: '[', ']', 'Z' and 'g' commands.  Doesn't the fact
+	 * that the *single* characters don't mean anything but the *doubled*
 	 * characters do, just frost your shorts?
 	 */
-	if (vp->key == '[' || vp->key == ']' || vp->key == 'Z') {
+	if (vp->key == '[' || vp->key == ']' || vp->key == 'Z' || vp->key == 'g') {
 		/*
 		 * Historically, half entered [[, ]] or Z commands weren't
 		 * cancelled by <escape>, the terminal was beeped instead.

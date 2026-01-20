@@ -446,8 +446,11 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 *
 	 * If the line we're working with has changed, reread it..
 	 */
-	if (F_ISSET(vip, VIP_CUR_INVALID) || LNO != OLNO)
+	if (F_ISSET(vip, VIP_CUR_INVALID) || LNO != OLNO) {
+		if (O_ISSET(sp, O_RELATIVENUMBER) && LNO != OLNO)
+			F_SET(vip, VIP_N_RENUMBER);
 		goto slow;
+	}
 
 	/* Otherwise, if nothing's changed, ignore the cursor. */
 	if (CNO == OCNO)

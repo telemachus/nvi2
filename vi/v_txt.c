@@ -28,6 +28,7 @@
 static int	 txt_abbrev(SCR *, TEXT *, CHAR_T *, int, int *, int *);
 static void	 txt_ai_resolve(SCR *, TEXT *, int *);
 static TEXT	*txt_backup(SCR *, TEXTH *, TEXT *, u_int32_t *);
+static int	 txt_backup_joinprev(SCR *, TEXTH *, TEXT *, u_int32_t *);
 static int	 txt_dent(SCR *, TEXT *, int, int);
 static int	 txt_emark(SCR *, TEXT *, size_t);
 static void	 txt_err(SCR *, TEXTH *);
@@ -359,6 +360,12 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		if (LF_ISSET(TXT_AICHARS)) {
 			tp->offset = 0;
 			tp->ai = tp->cno;
+		} else if (O_VAL(sp, O_BACKSPACE) >= 3) {
+			/*
+			 * With backspace=3 (start), allow backspacing over
+			 * any text, including text before the insert point.
+			 */
+			tp->offset = 0;
 		} else
 			tp->offset = tp->cno;
 	}
@@ -979,18 +986,30 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 
 		/*
 		 * If at the beginning of the line, try and drop back to a
-		 * previously inserted line.
+		 * previously inserted line.  With backspace >= 1 (eol), we
+		 * can always attempt this.  Otherwise, only if we haven't
+		 * reached the offset yet (multi-line insert via 'o', etc.).
 		 */
 		if (tp->cno == 0) {
-			if ((ntp =
-			    txt_backup(sp, sp->tiq, tp, &flags)) == NULL)
-				goto err;
-			tp = ntp;
+			if (O_VAL(sp, O_BACKSPACE) >= 1 ||
+			    tp->offset == 0) {
+				if ((ntp =
+				    txt_backup(sp, sp->tiq, tp, &flags)) == NULL)
+					goto err;
+				tp = ntp;
+				break;
+			}
+			if (!LF_ISSET(TXT_REPLAY))
+				txt_nomorech(sp);
 			break;
 		}
 
-		/* If nothing to erase, bell the user. */
-		if (tp->cno <= tp->offset) {
+		/*
+		 * If nothing to erase, bell the user.  With backspace=3
+		 * (start), we can erase past the insertion point.
+		 */
+		if (tp->cno <= tp->offset &&
+		    O_VAL(sp, O_BACKSPACE) < 3) {
 			if (!LF_ISSET(TXT_REPLAY))
 				txt_nomorech(sp);
 			break;
@@ -1000,50 +1019,58 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		--tp->cno;
 
 		/*
-		 * Historically, vi didn't replace the erased characters with
-		 * <blank>s, presumably because it's easier to fix a minor
-		 * typing mistake and continue on if the previous letters are
-		 * already there.  This is a problem for incremental searching,
-		 * because the user can no longer tell where they are in the
-		 * colon command line because the cursor is at the last search
-		 * point in the screen.  So, if incrementally searching, erase
-		 * the erased characters from the screen.
+		 * Shift remaining text left to remove the character.
+		 * This gives immediate visual feedback.
 		 */
-		if (FL_ISSET(is_flags, IS_RUNNING))
-			tp->lb[tp->cno] = ' ';
+		if (tp->owrite + tp->insert > 0)
+			MEMMOVE(tp->lb + tp->cno,
+			    tp->lb + tp->cno + 1, tp->owrite + tp->insert);
+		--tp->len;
 
 		/*
-		 * Increment overwrite, decrement ai if deleted.
+		 * Decrement ai if we deleted an autoindent character.
 		 *
 		 * !!!
 		 * Historic vi did not permit users to use erase characters
 		 * to delete autoindent characters.  We do.  Eat hot death,
 		 * POSIX.
 		 */
-		++tp->owrite;
 		if (tp->cno < tp->ai)
 			--tp->ai;
 
 		/* Reset if we deleted an incremental search character. */
 		if (FL_ISSET(is_flags, IS_RUNNING))
 			FL_SET(is_flags, IS_RESTART);
+
+		/* Mark line for refresh so backspace is immediately visible. */
+		(void)vs_change(sp, tp->lno, LINE_RESET);
 		break;
 	case K_VWERASE:			/* Skip back one word. */
 		/*
 		 * If at the beginning of the line, try and drop back to a
-		 * previously inserted line.
+		 * previously inserted line.  With backspace >= 1 (eol), we
+		 * can always attempt this.
 		 */
 		if (tp->cno == 0) {
-			if ((ntp =
-			    txt_backup(sp, sp->tiq, tp, &flags)) == NULL)
-				goto err;
-			tp = ntp;
+			if (O_VAL(sp, O_BACKSPACE) >= 1 ||
+			    tp->offset == 0) {
+				if ((ntp =
+				    txt_backup(sp, sp->tiq, tp, &flags)) == NULL)
+					goto err;
+				tp = ntp;
+			} else {
+				if (!LF_ISSET(TXT_REPLAY))
+					txt_nomorech(sp);
+				break;
+			}
 		}
 
 		/*
 		 * If at offset, nothing to erase so bell the user.
+		 * With backspace=3 (start), we can erase past the offset.
 		 */
-		if (tp->cno <= tp->offset) {
+		if (tp->cno <= tp->offset &&
+		    O_VAL(sp, O_BACKSPACE) < 3) {
 			if (!LF_ISSET(TXT_REPLAY))
 				txt_nomorech(sp);
 			break;
@@ -1051,26 +1078,51 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 
 		/*
 		 * The first werase goes back to any autoindent column and the
-		 * second werase goes back to the offset.
+		 * second werase goes back to the offset.  With backspace >= 2
+		 * (indent), we can delete through autoindent.  With backspace=3
+		 * (start), we can delete past the insertion point.
 		 *
 		 * !!!
 		 * Historic vi did not permit users to use erase characters to
 		 * delete autoindent characters.
 		 */
-		if (tp->ai && tp->cno > tp->ai)
+		if (O_VAL(sp, O_BACKSPACE) >= 3)
+			max = 0;
+		else if (O_VAL(sp, O_BACKSPACE) >= 2) {
+			max = tp->offset;
+			tp->ai = 0;
+		} else if (tp->ai && tp->cno > tp->ai)
 			max = tp->ai;
 		else {
 			tp->ai = 0;
 			max = tp->offset;
 		}
 
+		/*
+		 * Track starting position so we can shift text left after
+		 * determining how many characters to delete.
+		 */
+		{
+		size_t start_cno = tp->cno;
+		size_t deleted;
+
 		/* Skip over trailing space characters. */
-		while (tp->cno > max && ISBLANK(tp->lb[tp->cno - 1])) {
+		while (tp->cno > max && ISBLANK(tp->lb[tp->cno - 1]))
 			--tp->cno;
-			++tp->owrite;
-		}
-		if (tp->cno == max)
+		if (tp->cno == max) {
+			/*
+			 * Shift text left and update length for chars deleted.
+			 */
+			deleted = start_cno - tp->cno;
+			if (deleted > 0) {
+				if (tp->owrite + tp->insert > 0)
+					MEMMOVE(tp->lb + tp->cno,
+					    tp->lb + start_cno,
+					    tp->owrite + tp->insert);
+				tp->len -= deleted;
+			}
 			break;
+		}
 		/*
 		 * There are three types of word erase found on UNIX systems.
 		 * They can be identified by how the string /a/b/c is treated
@@ -1088,26 +1140,16 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		 * interface and the historic tty driver behavior,
 		 * respectively, and the default is the same as the historic
 		 * vi behavior.
-		 *
-		 * Overwrite erased characters if doing incremental search;
-		 * see comment above.
 		 */
 		if (LF_ISSET(TXT_TTYWERASE))
 			while (tp->cno > max) {
 				if (ISBLANK(tp->lb[tp->cno - 1]))
 					break;
 				--tp->cno;
-				++tp->owrite;
-				if (FL_ISSET(is_flags, IS_RUNNING))
-					tp->lb[tp->cno] = ' ';
 			}
 		else {
-			if (LF_ISSET(TXT_ALTWERASE)) {
+			if (LF_ISSET(TXT_ALTWERASE))
 				--tp->cno;
-				++tp->owrite;
-				if (FL_ISSET(is_flags, IS_RUNNING))
-					tp->lb[tp->cno] = ' ';
-			}
 			if (tp->cno > max)
 				tmp = inword(tp->lb[tp->cno - 1]);
 			while (tp->cno > max) {
@@ -1115,32 +1157,57 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 				    || ISBLANK(tp->lb[tp->cno - 1]))
 					break;
 				--tp->cno;
-				++tp->owrite;
-				if (FL_ISSET(is_flags, IS_RUNNING))
-					tp->lb[tp->cno] = ' ';
 			}
+		}
+
+		/*
+		 * Shift remaining text left to remove deleted characters.
+		 * This gives immediate visual feedback.
+		 */
+		deleted = start_cno - tp->cno;
+		if (deleted > 0) {
+			if (tp->owrite + tp->insert > 0)
+				MEMMOVE(tp->lb + tp->cno,
+				    tp->lb + start_cno, tp->owrite + tp->insert);
+			tp->len -= deleted;
+		}
 		}
 
 		/* Reset if we deleted an incremental search character. */
 		if (FL_ISSET(is_flags, IS_RUNNING))
 			FL_SET(is_flags, IS_RESTART);
+
+		/* Mark line for refresh so word erase is immediately visible. */
+		(void)vs_change(sp, tp->lno, LINE_RESET);
 		break;
 	case K_VKILL:			/* Restart this line. */
 		/*
 		 * !!!
 		 * If at the beginning of the line, try and drop back to a
 		 * previously inserted line.  Historic vi did not permit
-		 * users to go back to previous lines.
+		 * users to go back to previous lines.  With backspace >= 1
+		 * (eol), we allow this.
 		 */
 		if (tp->cno == 0) {
-			if ((ntp =
-			    txt_backup(sp, sp->tiq, tp, &flags)) == NULL)
-				goto err;
-			tp = ntp;
+			if (O_VAL(sp, O_BACKSPACE) >= 1 ||
+			    tp->offset == 0) {
+				if ((ntp =
+				    txt_backup(sp, sp->tiq, tp, &flags)) == NULL)
+					goto err;
+				tp = ntp;
+			} else {
+				if (!LF_ISSET(TXT_REPLAY))
+					txt_nomorech(sp);
+				break;
+			}
 		}
 
-		/* If at offset, nothing to erase so bell the user. */
-		if (tp->cno <= tp->offset) {
+		/*
+		 * If at offset, nothing to erase so bell the user.
+		 * With backspace=3 (start), we can erase past the offset.
+		 */
+		if (tp->cno <= tp->offset &&
+		    O_VAL(sp, O_BACKSPACE) < 3) {
 			if (!LF_ISSET(TXT_REPLAY))
 				txt_nomorech(sp);
 			break;
@@ -1148,34 +1215,47 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 
 		/*
 		 * First kill goes back to any autoindent and second kill goes
-		 * back to the offset.
+		 * back to the offset.  With backspace >= 2 (indent), we can
+		 * delete through autoindent.  With backspace=3 (start), we
+		 * can delete to beginning of line.
 		 *
 		 * !!!
 		 * Historic vi did not permit users to use erase characters to
 		 * delete autoindent characters.
 		 */
-		if (tp->ai && tp->cno > tp->ai)
+		if (O_VAL(sp, O_BACKSPACE) >= 3)
+			max = 0;
+		else if (O_VAL(sp, O_BACKSPACE) >= 2) {
+			max = tp->offset;
+			tp->ai = 0;
+		} else if (tp->ai && tp->cno > tp->ai)
 			max = tp->ai;
 		else {
 			tp->ai = 0;
 			max = tp->offset;
 		}
-		tp->owrite += tp->cno - max;
 
 		/*
-		 * Overwrite erased characters if doing incremental search;
-		 * see comment above.
+		 * Shift remaining text left to remove deleted characters.
+		 * This gives immediate visual feedback.
 		 */
-		if (FL_ISSET(is_flags, IS_RUNNING))
-			do {
-				tp->lb[--tp->cno] = ' ';
-			} while (tp->cno > max);
-		else
+		{
+		size_t deleted = tp->cno - max;
+		if (deleted > 0) {
+			if (tp->owrite + tp->insert > 0)
+				MEMMOVE(tp->lb + max, tp->lb + tp->cno,
+				    tp->owrite + tp->insert);
+			tp->len -= deleted;
 			tp->cno = max;
+		}
+		}
 
 		/* Reset if we deleted an incremental search character. */
 		if (FL_ISSET(is_flags, IS_RUNNING))
 			FL_SET(is_flags, IS_RESTART);
+
+		/* Mark line for refresh so line kill is immediately visible. */
+		(void)vs_change(sp, tp->lno, LINE_RESET);
 		break;
 	case K_CNTRLT:			/* Add autoindent characters. */
 		if (!LF_ISSET(TXT_CNTRLT))
@@ -1391,12 +1471,14 @@ resolve:/*
 	/*
 	 * 5: Refresh the screen if we're about to wait on a character or we
 	 *    need to know where the cursor really is.
+	 *
+	 * Always force paint (pass 1) - the historic optimization of skipping
+	 * screen flush when keys are waiting causes visual lag during fast
+	 * backspacing.
 	 */
-	if (margin != 0 || !KEYS_WAITING(sp)) {
-		UPDATE_POSITION(sp, tp);
-		if (vs_refresh(sp, margin != 0))
-			return (1);
-	}
+	UPDATE_POSITION(sp, tp);
+	if (vs_refresh(sp, 1))
+		return (1);
 
 	/* 6: Proceed with the incremental search. */
 	if (FL_ISSET(is_flags, IS_RUNNING) && txt_isrch(sp, vp, tp, &is_flags))
@@ -1793,6 +1875,15 @@ txt_backup(SCR *sp, TEXTH *tiqh, TEXT *tp, u_int32_t *flagsp)
 
 	/* Get a handle on the previous TEXT structure. */
 	if ((ntp = TAILQ_PREV(tp, _texth, q)) == NULL) {
+		/*
+		 * No previous TEXT in queue.  With backspace >= 1 (eol),
+		 * join with the previous file line instead.
+		 */
+		if (O_VAL(sp, O_BACKSPACE) >= 1) {
+			if (txt_backup_joinprev(sp, tiqh, tp, flagsp))
+				return (tp);  /* Failed, stay on current line */
+			return (tp);  /* Success, tp was modified in place */
+		}
 		if (!FL_ISSET(*flagsp, TXT_REPLAY))
 			msgq(sp, M_BERR,
 			    "193|Already at the beginning of the insert");
@@ -1822,6 +1913,75 @@ txt_backup(SCR *sp, TEXTH *tiqh, TEXT *tp, u_int32_t *flagsp)
 
 	/* Return the new/current TEXT. */
 	return (ntp);
+}
+
+/*
+ * txt_backup_joinprev --
+ *	Join the current line with the previous line from the file.
+ *	This handles backspacing over EOL when there's no previous TEXT
+ *	in the input queue (i.e., the previous line is an "old" line).
+ *	Returns 0 on success, 1 on error.
+ */
+static int
+txt_backup_joinprev(SCR *sp, TEXTH *tiqh, TEXT *tp, u_int32_t *flagsp)
+{
+	CHAR_T *prevline;
+	size_t prevlen;
+	recno_t prevlno;
+
+	/* Can't join if we're on the first line. */
+	if (tp->lno <= 1) {
+		if (!FL_ISSET(*flagsp, TXT_REPLAY))
+			msgq(sp, M_BERR, "Already at the first line");
+		return (1);
+	}
+
+	prevlno = tp->lno - 1;
+
+	/* Get the previous line from the file. */
+	if (db_get(sp, prevlno, DBG_FATAL, &prevline, &prevlen))
+		return (1);
+
+	/* Make room for the combined line. */
+	BINC_RETW(sp, tp->lb, tp->lb_len,
+	    prevlen + tp->len + tp->insert + tp->owrite + 32);
+
+	/* Shift current line content to make room for previous line. */
+	if (tp->len > 0)
+		MEMMOVE(tp->lb + prevlen, tp->lb, tp->len);
+
+	/* Copy previous line at the beginning. */
+	MEMMOVE(tp->lb, prevline, prevlen);
+
+	/* Update TEXT fields. */
+	tp->len += prevlen;
+	tp->cno = prevlen;	/* Cursor at the join point. */
+	tp->lno = prevlno;	/* Now on the previous line. */
+	tp->offset = 0;		/* Can now backspace over old content. */
+	tp->ai = 0;		/* No autoindent on this line. */
+	tp->sv_len = tp->len;
+	tp->sv_cno = tp->cno;
+
+	/* Delete the old line from the file (what was the current line). */
+	if (db_delete(sp, prevlno + 1))
+		return (1);
+
+	/*
+	 * Force a full screen redraw.  The line deletion changes line
+	 * numbers for all subsequent lines, so we need to repaint.
+	 */
+	F_SET(sp, SC_SCR_REDRAW);
+
+	/* Handle appending to the line. */
+	if (tp->owrite == 0 && tp->insert == 0) {
+		tp->lb[tp->len] = CH_CURSOR;
+		++tp->insert;
+		++tp->len;
+		FL_SET(*flagsp, TXT_APPENDEOL);
+	} else
+		FL_CLR(*flagsp, TXT_APPENDEOL);
+
+	return (0);
 }
 
 /*

@@ -56,6 +56,14 @@ OPTLIST const optlist[] = {
 	{L("autoprint"),	NULL,		OPT_1BOOL,	0},
 /* O_AUTOWRITE	    4BSD */
 	{L("autowrite"),	NULL,		OPT_0BOOL,	0},
+/* O_BACKSPACE	  nvi2
+ *	Backspace option controls what backspace can delete in insert mode.
+ *	0 = traditional vi (cannot backspace over start of insert)
+ *	1 = eol (can backspace over line breaks)
+ *	2 = indent,eol (can also backspace over autoindent)
+ *	3 = indent,eol,start (can backspace over anything)
+ */
+	{L("backspace"),	NULL,		OPT_NUM,	0},
 /* O_BACKUP	  4.4BSD */
 	{L("backup"),	NULL,		OPT_STR,	0},
 /* O_BEAUTIFY	    4BSD */
@@ -159,6 +167,8 @@ OPTLIST const optlist[] = {
 	{L("readonly"),	f_readonly,	OPT_0BOOL,	OPT_ALWAYS},
 /* O_RECDIR	  4.4BSD */
 	{L("recdir"),	NULL,		OPT_STR,	0},
+/* O_RELATIVENUMBER   nvi2 */
+	{L("relativenumber"),	f_reformat,	OPT_0BOOL,	0},
 /* O_REDRAW	    4BSD */
 	{L("redraw"),	NULL,		OPT_0BOOL,	0},
 /* O_REMAP	    4BSD */
@@ -271,6 +281,7 @@ static OABBREV const abbrev[] = {
 	{L("opt"),	O_OPTIMIZE},		/*     4BSD */
 	{L("para"),	O_PARAGRAPHS},		/*     4BSD */
 	{L("re"),	O_REDRAW},		/* O'Reilly */
+	{L("rnu"),	O_RELATIVENUMBER},	/*     nvi2 */
 	{L("ro"),	O_READONLY},		/*     4BSD (undocumented) */
 	{L("scr"),	O_SCROLL},		/*     4BSD (undocumented) */
 	{L("sect"),	O_SECTIONS},		/* O'Reilly */

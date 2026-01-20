@@ -56,6 +56,37 @@ static void goto_adjust(VICMD *);
  */
 
 /*
+ * v_gg -- [count]gg
+ *	Go to first non-blank character of the line count, the first line
+ *	of the file by default.
+ *
+ * PUBLIC: int v_gg(SCR *, VICMD *);
+ */
+int
+v_gg(SCR *sp, VICMD *vp)
+{
+	recno_t nlines;
+
+	if (F_ISSET(vp, VC_C1SET)) {
+		if (!db_exist(sp, vp->count)) {
+			if (vp->count == 1) {
+				if (db_last(sp, &nlines))
+					return (1);
+				if (nlines == 0)
+					return (0);
+			}
+			v_eof(sp, &vp->m_start);
+			return (1);
+		}
+		vp->m_stop.lno = vp->count;
+	} else {
+		vp->m_stop.lno = 1;
+	}
+	goto_adjust(vp);
+	return (0);
+}
+
+/*
  * v_lgoto -- [count]G
  *	Go to first non-blank character of the line count, the last line
  *	of the file by default.

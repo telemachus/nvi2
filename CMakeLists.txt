@@ -69,10 +69,10 @@ set(VI_SRCS
     vi/v_increment.c vi/v_init.c vi/v_itxt.c vi/v_left.c vi/v_mark.c
     vi/v_match.c vi/v_paragraph.c vi/v_put.c vi/v_redraw.c vi/v_replace.c
     vi/v_right.c vi/v_screen.c vi/v_scroll.c vi/v_search.c vi/v_section.c
-    vi/v_sentence.c vi/v_status.c vi/v_txt.c vi/v_ulcase.c vi/v_undo.c
-    vi/v_util.c vi/v_word.c vi/v_xchar.c vi/v_yank.c vi/v_z.c vi/v_zexit.c
-    vi/vi.c vi/vs_line.c vi/vs_msg.c vi/vs_refresh.c vi/vs_relative.c
-    vi/vs_smap.c vi/vs_split.c)
+    vi/v_sentence.c vi/v_status.c vi/v_textobj.c vi/v_txt.c vi/v_ulcase.c
+    vi/v_undo.c vi/v_util.c vi/v_word.c vi/v_xchar.c vi/v_yank.c vi/v_z.c
+    vi/v_zexit.c vi/vi.c vi/vs_line.c vi/vs_msg.c vi/vs_refresh.c
+    vi/vs_relative.c vi/vs_smap.c vi/vs_split.c)
 
 set(REGEX_SRCS
     regex/regcomp.c regex/regerror.c regex/regexec.c regex/regfree.c)

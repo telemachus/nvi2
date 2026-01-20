@@ -92,9 +92,9 @@ ex_filter(SCR *sp, EXCMD *cmdp, MARK *fm, MARK *tm, MARK *rp, CHAR_T *cmd, enum 
 	}
 
 	/* Fork off the utility process. */
-	switch (utility_pid = vfork()) {
+	switch (utility_pid = fork()) {
 	case -1:			/* Error. */
-		msgq(sp, M_SYSERR, "vfork");
+		msgq(sp, M_SYSERR, "fork");
 err:		if (input[0] != -1)
 			(void)close(input[0]);
 		if (input[1] != -1)

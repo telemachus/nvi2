@@ -129,13 +129,14 @@ struct _gs {
 /* Flags. */
 #define	G_ABBREV	0x0001		/* If have abbreviations. */
 #define	G_BELLSCHED	0x0002		/* Bell scheduled. */
-#define	G_INTERRUPTED	0x0004		/* Interrupted. */
-#define	G_RECOVER_SET	0x0008		/* Recover system initialized. */
-#define	G_SCRIPTED	0x0010		/* Ex script session. */
-#define	G_SCRWIN	0x0020		/* Scripting windows running. */
-#define	G_SNAPSHOT	0x0040		/* Always snapshot files. */
-#define	G_SRESTART	0x0080		/* Screen restarted. */
-#define	G_TMP_INUSE	0x0100		/* Temporary buffer in use. */
+#define	G_EXIT_FAIL	0x0004		/* Exit with failure status. */
+#define	G_INTERRUPTED	0x0008		/* Interrupted. */
+#define	G_RECOVER_SET	0x0010		/* Recover system initialized. */
+#define	G_SCRIPTED	0x0020		/* Ex script session. */
+#define	G_SCRWIN	0x0040		/* Scripting windows running. */
+#define	G_SNAPSHOT	0x0080		/* Always snapshot files. */
+#define	G_SRESTART	0x0100		/* Screen restarted. */
+#define	G_TMP_INUSE	0x0200		/* Temporary buffer in use. */
 	u_int32_t flags;
 
 	/* Screen interface functions. */

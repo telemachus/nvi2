@@ -402,7 +402,7 @@ editor(GS *gp, int argc, char *argv[])
 		if (F_ISSET(sp, SC_EX) ? ex(&sp) : vi(&sp))
 			goto err;
 
-done:	rval = 0;
+done:	rval = F_ISSET(gp, G_EXIT_FAIL) ? 1 : 0;
 	if (0)
 err:		rval = 1;
 
