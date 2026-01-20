@@ -433,6 +433,15 @@ v_event_append(SCR *sp, EVENT *argp)
 			evp->e_value = KEY_VAL(sp, evp->e_c);
 			evp->e_flags = flags;
 		}
+		/*
+		 * Clear G_BPASTE now that all characters have CH_NOMAP set.
+		 * This must happen after the loop so all pasted characters
+		 * get the flag, but before they're processed.
+		 */
+		if (F_ISSET(gp, G_BPASTE_END)) {
+			F_CLR(gp, G_BPASTE);
+			F_CLR(gp, G_BPASTE_END);
+		}
 	} else {
 		*evp = *argp;
 	}

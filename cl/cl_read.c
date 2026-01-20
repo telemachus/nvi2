@@ -391,7 +391,7 @@ cl_bpaste_filter(SCR *sp, char *buf, int *lenp)
 		/* Check for paste end sequence. */
 		if (end - p >= BPASTE_LEN &&
 		    memcmp(p, BPASTE_END, BPASTE_LEN) == 0) {
-			F_CLR(gp, G_BPASTE);
+			F_SET(gp, G_BPASTE_END);
 			p += BPASTE_LEN;
 			filtered = 1;
 			continue;

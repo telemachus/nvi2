@@ -780,9 +780,11 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		 * characters may have been erased.
 		 *
 		 * Skip autoindent during bracketed paste to allow literal
-		 * insertion of pasted text.
+		 * insertion of pasted text.  Check per-character CH_NOMAP flag
+		 * rather than global G_BPASTE since global is cleared before
+		 * characters are processed.
 		 */
-		if (LF_ISSET(TXT_AUTOINDENT) && !F_ISSET(sp->gp, G_BPASTE)) {
+		if (LF_ISSET(TXT_AUTOINDENT) && !F_ISSET(&evp->e_ch, CH_NOMAP)) {
 			if (nochange) {
 				nochange = 0;
 				if (v_txt_auto(sp, OOBLNO, &ait, ait.ai, ntp))

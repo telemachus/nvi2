@@ -138,6 +138,7 @@ struct _gs {
 #define	G_SRESTART	0x0100		/* Screen restarted. */
 #define	G_TMP_INUSE	0x0200		/* Temporary buffer in use. */
 #define	G_BPASTE	0x0400		/* Bracketed paste in progress. */
+#define	G_BPASTE_END	0x0800		/* Bracketed paste end seen. */
 	u_int32_t flags;
 
 	/* Screen interface functions. */
