@@ -72,8 +72,10 @@ v_gg(SCR *sp, VICMD *vp)
 			if (vp->count == 1) {
 				if (db_last(sp, &nlines))
 					return (1);
-				if (nlines == 0)
+				if (nlines == 0) {
+					vp->m_stop.lno = 1;
 					return (0);
+				}
 			}
 			v_eof(sp, &vp->m_start);
 			return (1);
