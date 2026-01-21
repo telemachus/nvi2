@@ -186,7 +186,7 @@ textobj_word(SCR *sp, VICMD *vp, int around, int bigword)
 
 	if (in_blank) {
 		/* In whitespace: find end of whitespace region. */
-		while (cs.cs_cno < len - 1) {
+		while (cs.cs_cno + 1 < len) {
 			if (cs_next(sp, &cs))
 				return (1);
 			if (cs.cs_flags != 0)
