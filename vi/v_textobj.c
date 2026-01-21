@@ -400,7 +400,7 @@ textobj_pair(SCR *sp, VICMD *vp, int around, CHAR_T open, CHAR_T close)
 
 	/* Search backward for opening delimiter. */
 	if (!found_open) {
-		cnt = found_close ? 1 : 0;
+		cnt = 0;
 		for (;;) {
 			if (cs_prev(sp, &cs))
 				return (1);
