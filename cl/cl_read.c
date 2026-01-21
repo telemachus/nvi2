@@ -105,13 +105,23 @@ read:
 	case INP_OK:
 		/*
 		 * Filter bracketed paste escape sequences from raw input.
-		 * Sets G_BPASTE on start, sets CL_BPASTE_END on end.
+		 * Sets G_BPASTE on start, sets G_BPASTE_END on end.
 		 * G_BPASTE is cleared after events are created below.
 		 */
 		{
+			GS *gp = sp->gp;
 			int total = nr + clp->skip;
 			(void)cl_bpaste_filter(sp, clp->ibuf, &total);
 			if (total == 0) {
+				/*
+				 * Buffer contained only paste markers.
+				 * If end marker was seen, clear paste state
+				 * now since v_event_append won't run.
+				 */
+				if (F_ISSET(gp, G_BPASTE_END)) {
+					F_CLR(gp, G_BPASTE);
+					F_CLR(gp, G_BPASTE_END);
+				}
 				clp->skip = 0;
 				goto read;
 			}
@@ -362,13 +372,11 @@ cl_resize(SCR *sp, size_t lines, size_t columns)
 static int
 cl_bpaste_filter(SCR *sp, char *buf, int *lenp)
 {
-	CL_PRIVATE *clp;
 	GS *gp;
 	char *p, *end, *dst;
 	int len, filtered;
 
 	gp = sp->gp;
-	clp = CLP(sp);
 	len = *lenp;
 	if (len < BPASTE_LEN) {
 		return (0);
