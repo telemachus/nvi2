@@ -129,16 +129,16 @@ struct _gs {
 /* Flags. */
 #define	G_ABBREV	0x0001		/* If have abbreviations. */
 #define	G_BELLSCHED	0x0002		/* Bell scheduled. */
-#define	G_EXIT_FAIL	0x0004		/* Exit with failure status. */
-#define	G_INTERRUPTED	0x0008		/* Interrupted. */
-#define	G_RECOVER_SET	0x0010		/* Recover system initialized. */
-#define	G_SCRIPTED	0x0020		/* Ex script session. */
-#define	G_SCRWIN	0x0040		/* Scripting windows running. */
-#define	G_SNAPSHOT	0x0080		/* Always snapshot files. */
-#define	G_SRESTART	0x0100		/* Screen restarted. */
-#define	G_TMP_INUSE	0x0200		/* Temporary buffer in use. */
-#define	G_BPASTE	0x0400		/* Bracketed paste in progress. */
-#define	G_BPASTE_END	0x0800		/* Bracketed paste end seen. */
+#define	G_BPASTE	0x0004		/* Bracketed paste in progress. */
+#define	G_BPASTE_END	0x0008		/* Bracketed paste end seen. */
+#define	G_EXIT_FAIL	0x0010		/* Exit with failure status. */
+#define	G_INTERRUPTED	0x0020		/* Interrupted. */
+#define	G_RECOVER_SET	0x0040		/* Recover system initialized. */
+#define	G_SCRIPTED	0x0080		/* Ex script session. */
+#define	G_SCRWIN	0x0100		/* Scripting windows running. */
+#define	G_SNAPSHOT	0x0200		/* Always snapshot files. */
+#define	G_SRESTART	0x0400		/* Screen restarted. */
+#define	G_TMP_INUSE	0x0800		/* Temporary buffer in use. */
 	u_int32_t flags;
 
 	/* Screen interface functions. */
