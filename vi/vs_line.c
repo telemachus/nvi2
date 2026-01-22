@@ -44,6 +44,7 @@ vs_line(SCR *sp, SMAP *smp, size_t *yp, size_t *xp)
 	size_t scno, skip_cols, skip_screens;
 	int dne, is_cached, is_partial, is_tab, no_draw;
 	int list_tab, list_dollar;
+	u_long display_lno;
 	CHAR_T *p;
 	CHAR_T *cbp, *ecbp, cbuf[128];
 	ARG_CHAR_T ch = '\0';
@@ -134,7 +135,6 @@ vs_line(SCR *sp, SMAP *smp, size_t *yp, size_t *xp)
 		if (O_ISSET(sp, O_NUMBER)) {
 			cols_per_screen -= O_NUMBER_LENGTH;
 			if ((!dne || smp->lno == 1) && skip_cols == 0) {
-				u_long display_lno;
 				if (O_ISSET(sp, O_RELATIVENUMBER) &&
 				    smp->lno != sp->lno) {
 					display_lno = smp->lno > sp->lno ?
@@ -500,6 +500,7 @@ vs_number(SCR *sp)
 	size_t len, oldy, oldx;
 	int exist;
 	char nbuf[10];
+	u_long display_lno;
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -537,7 +538,6 @@ vs_number(SCR *sp)
 			break;
 
 		(void)gp->scr_move(sp, smp - HMAP, 0);
-		u_long display_lno;
 		if (O_ISSET(sp, O_RELATIVENUMBER) && smp->lno != sp->lno) {
 			display_lno = smp->lno > sp->lno ?
 			    smp->lno - sp->lno : sp->lno - smp->lno;
