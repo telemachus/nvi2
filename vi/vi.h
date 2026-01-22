@@ -319,6 +319,13 @@ typedef struct _vi_private {
 
 #define	O_NUMBER_FMT	"%7lu "			/* O_NUMBER format, length. */
 #define	O_NUMBER_LENGTH	8
+
+/* O_BACKSPACE option levels. */
+#define	BS_TRADITIONAL	0	/* Cannot backspace over start of insert. */
+#define	BS_EOL		1	/* Can backspace over line breaks. */
+#define	BS_INDENT	2	/* Can also backspace over autoindent. */
+#define	BS_START	3	/* Can backspace over anything. */
+
 #define	SCREEN_COLS(sp)				/* Screen columns. */	\
 	((O_ISSET(sp, O_NUMBER) ? (sp)->cols - O_NUMBER_LENGTH : (sp)->cols))
 

@@ -360,7 +360,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		if (LF_ISSET(TXT_AICHARS)) {
 			tp->offset = 0;
 			tp->ai = tp->cno;
-		} else if (O_VAL(sp, O_BACKSPACE) >= 3) {
+		} else if (O_VAL(sp, O_BACKSPACE) >= BS_START) {
 			/*
 			 * With backspace=3 (start), allow backspacing over
 			 * any text, including text before the insert point.
@@ -996,7 +996,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		 * reached the offset yet (multi-line insert via 'o', etc.).
 		 */
 		if (tp->cno == 0) {
-			if (O_VAL(sp, O_BACKSPACE) >= 1 ||
+			if (O_VAL(sp, O_BACKSPACE) >= BS_EOL ||
 			    tp->offset == 0) {
 				if ((ntp =
 				    txt_backup(sp, sp->tiq, tp, &flags)) == NULL)
@@ -1014,7 +1014,18 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		 * (start), we can erase past the insertion point.
 		 */
 		if (tp->cno <= tp->offset &&
-		    O_VAL(sp, O_BACKSPACE) < 3) {
+		    O_VAL(sp, O_BACKSPACE) < BS_START) {
+			if (!LF_ISSET(TXT_REPLAY))
+				txt_nomorech(sp);
+			break;
+		}
+
+		/*
+		 * If at autoindent boundary and backspace < 2 (indent),
+		 * do not allow deleting autoindent characters.
+		 */
+		if (tp->ai && tp->cno <= tp->ai &&
+		    O_VAL(sp, O_BACKSPACE) < BS_INDENT) {
 			if (!LF_ISSET(TXT_REPLAY))
 				txt_nomorech(sp);
 			break;
@@ -1057,7 +1068,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		 * can always attempt this.
 		 */
 		if (tp->cno == 0) {
-			if (O_VAL(sp, O_BACKSPACE) >= 1 ||
+			if (O_VAL(sp, O_BACKSPACE) >= BS_EOL ||
 			    tp->offset == 0) {
 				if ((ntp =
 				    txt_backup(sp, sp->tiq, tp, &flags)) == NULL)
@@ -1075,7 +1086,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		 * With backspace=3 (start), we can erase past the offset.
 		 */
 		if (tp->cno <= tp->offset &&
-		    O_VAL(sp, O_BACKSPACE) < 3) {
+		    O_VAL(sp, O_BACKSPACE) < BS_START) {
 			if (!LF_ISSET(TXT_REPLAY))
 				txt_nomorech(sp);
 			break;
@@ -1091,9 +1102,9 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		 * Historic vi did not permit users to use erase characters to
 		 * delete autoindent characters.
 		 */
-		if (O_VAL(sp, O_BACKSPACE) >= 3)
+		if (O_VAL(sp, O_BACKSPACE) >= BS_START)
 			max = 0;
-		else if (O_VAL(sp, O_BACKSPACE) >= 2) {
+		else if (O_VAL(sp, O_BACKSPACE) >= BS_INDENT) {
 			max = tp->offset;
 			tp->ai = 0;
 		} else if (tp->ai && tp->cno > tp->ai)
@@ -1194,7 +1205,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		 * (eol), we allow this.
 		 */
 		if (tp->cno == 0) {
-			if (O_VAL(sp, O_BACKSPACE) >= 1 ||
+			if (O_VAL(sp, O_BACKSPACE) >= BS_EOL ||
 			    tp->offset == 0) {
 				if ((ntp =
 				    txt_backup(sp, sp->tiq, tp, &flags)) == NULL)
@@ -1212,7 +1223,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		 * With backspace=3 (start), we can erase past the offset.
 		 */
 		if (tp->cno <= tp->offset &&
-		    O_VAL(sp, O_BACKSPACE) < 3) {
+		    O_VAL(sp, O_BACKSPACE) < BS_START) {
 			if (!LF_ISSET(TXT_REPLAY))
 				txt_nomorech(sp);
 			break;
@@ -1228,9 +1239,9 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		 * Historic vi did not permit users to use erase characters to
 		 * delete autoindent characters.
 		 */
-		if (O_VAL(sp, O_BACKSPACE) >= 3)
+		if (O_VAL(sp, O_BACKSPACE) >= BS_START)
 			max = 0;
-		else if (O_VAL(sp, O_BACKSPACE) >= 2) {
+		else if (O_VAL(sp, O_BACKSPACE) >= BS_INDENT) {
 			max = tp->offset;
 			tp->ai = 0;
 		} else if (tp->ai && tp->cno > tp->ai)
@@ -1884,7 +1895,7 @@ txt_backup(SCR *sp, TEXTH *tiqh, TEXT *tp, u_int32_t *flagsp)
 		 * No previous TEXT in queue.  With backspace >= 1 (eol),
 		 * join with the previous file line instead.
 		 */
-		if (O_VAL(sp, O_BACKSPACE) >= 1) {
+		if (O_VAL(sp, O_BACKSPACE) >= BS_EOL) {
 			if (txt_backup_joinprev(sp, tiqh, tp, flagsp))
 				return (tp);  /* Failed, stay on current line */
 			return (tp);  /* Success, tp was modified in place */
