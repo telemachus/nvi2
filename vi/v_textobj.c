@@ -284,7 +284,7 @@ textobj_word(SCR *sp, VICMD *vp, int around, int bigword)
 static int
 textobj_quote(SCR *sp, VICMD *vp, int around, CHAR_T quote)
 {
-	size_t len, cno;
+	size_t len, cno, i;
 	CHAR_T *p;
 	size_t start_cno, stop_cno;
 	int found_start, found_stop;
@@ -309,7 +309,7 @@ textobj_quote(SCR *sp, VICMD *vp, int around, CHAR_T quote)
 	 * Scan from start of line to find the quoted region containing
 	 * or following the cursor.
 	 */
-	for (size_t i = 0; i < len; i++) {
+	for (i = 0; i < len; i++) {
 		if (p[i] == quote) {
 			if (!in_quotes) {
 				/* Opening quote. */
@@ -563,8 +563,13 @@ static int
 textobj_entire(SCR *sp, VICMD *vp, int around)
 {
 	recno_t lno, last_lno;
+	recno_t start_lno, stop_lno;
 	size_t len;
+	size_t start_cno, stop_cno;
 	CHAR_T *p;
+
+	start_lno = stop_lno = 0;
+	start_cno = stop_cno = 0;
 
 	/* Get the last line number. */
 	if (db_last(sp, &last_lno))
@@ -587,8 +592,6 @@ textobj_entire(SCR *sp, VICMD *vp, int around)
 		F_SET(vp, VM_LMODE);
 	} else {
 		/* ie: character-mode, first non-ws to last non-ws. */
-		recno_t start_lno = 0, stop_lno = 0;
-		size_t start_cno = 0, stop_cno = 0;
 
 		/* Find first line with non-whitespace content. */
 		for (lno = 1; lno <= last_lno; lno++) {
