@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2026
- *	Text object support for nvi2.
+ *	Peter Aronoff.  All rights reserved.
  *
  * See the LICENSE file for redistribution information.
  */
