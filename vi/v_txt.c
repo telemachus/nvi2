@@ -1487,14 +1487,12 @@ resolve:/*
 	/*
 	 * 5: Refresh the screen if we're about to wait on a character or we
 	 *    need to know where the cursor really is.
-	 *
-	 * Always force paint (pass 1) - the historic optimization of skipping
-	 * screen flush when keys are waiting causes visual lag during fast
-	 * backspacing.
 	 */
-	UPDATE_POSITION(sp, tp);
-	if (vs_refresh(sp, 1))
-		return (1);
+	if (margin != 0 || !KEYS_WAITING(sp)) {
+		UPDATE_POSITION(sp, tp);
+		if (vs_refresh(sp, margin != 0))
+			return (1);
+	}
 
 	/* 6: Proceed with the incremental search. */
 	if (FL_ISSET(is_flags, IS_RUNNING) && txt_isrch(sp, vp, tp, &is_flags))
