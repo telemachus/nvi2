@@ -41,12 +41,13 @@ ex_filter(SCR *sp, EXCMD *cmdp, MARK *fm, MARK *tm, MARK *rp, CHAR_T *cmd, enum 
 	FILE *ifp, *ofp;
 	pid_t parent_writer_pid, utility_pid;
 	recno_t nread;
-	int input[2], output[2], rval;
+	int input[2], output[2], rval, uwait_done;
 	char *name;
 	char *np;
 	size_t nlen;
 
 	rval = 0;
+	uwait_done = 0;
 
 	/* Set return cursor position, which is never less than line 1. */
 	*rp = *fm;
@@ -241,28 +242,77 @@ err:		if (input[0] != -1)
 			 */
 			if (filter_ldisplay(sp, ofp))
 				rval = 1;
+
+			/* Wait for the parent-writer. */
+			if (proc_wait(sp, (long)parent_writer_pid,
+			    "parent-writer", 0, 1))
+				rval = 1;
 		} else {
 			/*
-			 * Read the output from the read end of the output
-			 * pipe.  Ex_readfp appends to the MARK and closes
-			 * ofp.
+			 * FILTER_BANG: buffer the utility's output in
+			 * a temp file so that we can check the exit
+			 * status before modifying the buffer.  If the
+			 * utility fails, leave the buffer untouched.
 			 */
-			if (ex_readfp(sp, "filter", ofp, tm, &nread, 1))
+			FILE *tfp;
+			char buf[8192];
+			size_t n;
+
+			if ((tfp = tmpfile()) == NULL) {
+				msgq(sp, M_SYSERR, "tmpfile");
+				(void)fclose(ofp);
+				rval = 1;
+				if (proc_wait(sp, (long)parent_writer_pid,
+				    "parent-writer", 0, 1))
+					rval = 1;
+				uwait_done = 1;
+				INT2CHAR(sp, cmd, STRLEN(cmd) + 1, np, nlen);
+				(void)proc_wait(sp,
+				    (long)utility_pid, np, 1, 0);
+				break;
+			}
+
+			/* Drain the pipe into the temp file. */
+			while ((n = fread(buf, 1, sizeof(buf), ofp)) > 0)
+				(void)fwrite(buf, 1, n, tfp);
+			(void)fclose(ofp);
+
+			/* Wait for the parent-writer. */
+			if (proc_wait(sp, (long)parent_writer_pid,
+			    "parent-writer", 0, 1))
+				rval = 1;
+
+			/*
+			 * Wait for the utility and check its exit
+			 * status.  If it failed, discard the output
+			 * and leave the buffer unchanged.
+			 */
+			uwait_done = 1;
+			INT2CHAR(sp, cmd, STRLEN(cmd) + 1, np, nlen);
+			if (proc_wait(sp,
+			    (long)utility_pid, np, 0, 0) || rval) {
+				msgq(sp, M_ERR,
+				    "Filter failed, buffer not modified");
+				(void)fclose(tfp);
+				rval = 1;
+				break;
+			}
+
+			/*
+			 * The utility succeeded.  Read the buffered
+			 * output into the file and delete the
+			 * original lines.  Ex_readfp closes tfp.
+			 */
+			rewind(tfp);
+			if (ex_readfp(sp, "filter", tfp, tm, &nread, 1))
 				rval = 1;
 			sp->rptlines[L_ADDED] += nread;
-		}
-
-		/* Wait for the parent-writer. */
-		if (proc_wait(sp,
-		    (long)parent_writer_pid, "parent-writer", 0, 1))
-			rval = 1;
-
-		/* Delete any lines written to the utility. */
-		if (rval == 0 && ftype == FILTER_BANG &&
-		    (cut(sp, NULL, fm, tm, CUT_LINEMODE) ||
-		    del(sp, fm, tm, 1))) {
-			rval = 1;
-			break;
+			if (rval == 0 &&
+			    (cut(sp, NULL, fm, tm, CUT_LINEMODE) ||
+			    del(sp, fm, tm, 1))) {
+				rval = 1;
+				break;
+			}
 		}
 
 		/*
@@ -281,9 +331,13 @@ err:		if (input[0] != -1)
 	 * Ignore errors on vi file reads, to make reads prettier.  It's
 	 * completely inconsistent, and historic practice.
 	 */
-uwait:	INT2CHAR(sp, cmd, STRLEN(cmd) + 1, np, nlen);
-	return (proc_wait(sp, (long)utility_pid, np,
-	    ftype == FILTER_READ && F_ISSET(sp, SC_VI) ? 1 : 0, 0) || rval);
+uwait:	if (!uwait_done) {
+		INT2CHAR(sp, cmd, STRLEN(cmd) + 1, np, nlen);
+		if (proc_wait(sp, (long)utility_pid, np,
+		    ftype == FILTER_READ && F_ISSET(sp, SC_VI) ? 1 : 0, 0))
+			rval = 1;
+	}
+	return (rval);
 }
 
 /*
